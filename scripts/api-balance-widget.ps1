@@ -13,6 +13,8 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
 $checkScript = 'D:\deepseek\scripts\check-api-balance.ps1'
 $stateFile = 'D:\deepseek\scripts\balance-state.json'
 $logFile = 'D:\deepseek\scripts\balance-watch.log'
+# 悬浮窗只显示这些 API 行（其余照常检查，只是不在窗口显示；可自行增删）
+$visibleApis = @('DeepSeek', '阿里云')
 
 [xml]$xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -146,7 +148,7 @@ function Update-Widget {
   $script:lastStamp = $fi.LastWriteTime.Ticks
   $script:checking = $false
   try { $state = Get-Content $stateFile -Raw | ConvertFrom-Json } catch { return }
-  Add-Content $hbFile ((Get-Date -Format 'HH:mm:ss') + ' render items=' + $state.items.Count)
+  Add-Content $hbFile ((Get-Date -Format 'HH:mm:ss') + ' render items=' + $state.items.Count + ' rows=' + $rows.Children.Count)
   $timeText.Text = '更新于 ' + $state.updated
   $balanceBox.Children.Clear()
   $rows.Children.Clear()
@@ -192,7 +194,7 @@ function Update-Widget {
     }
   }
   foreach ($it in $state.items) {
-    if ($it.api -eq 'DeepSeek') { continue }
+    if ($it.api -eq 'DeepSeek' -or $visibleApis -notcontains $it.api) { continue }
     $level = [string]$it.level
     $dotColor = switch ($level) { 'ok' { '#4ADE80' } 'warn' { '#FACC15' } default { '#F87171' } }
     $textColor = switch ($level) { 'ok' { '#E5E7EB' } 'warn' { '#FDE68A' } default { '#FCA5A5' } }
@@ -242,6 +244,12 @@ function Update-Widget {
     $alertBox.Visibility = [System.Windows.Visibility]::Visible
   } else {
     $alertBox.Visibility = [System.Windows.Visibility]::Collapsed
+  }
+  # 按可见行数自适应高度（仅展开态）
+  if (-not $script:collapsed) {
+    $h = 128 + ($rows.Children.Count * 26)
+    if ($alertBox.Visibility -eq [System.Windows.Visibility]::Visible) { $h += 46 }
+    $window.Height = [Math]::Min(330, $h)
   }
 }
 
