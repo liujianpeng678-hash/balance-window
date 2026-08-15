@@ -31,6 +31,7 @@
 | sheapi.top | Codex 中转（gpt-5.6-sol） | ❌ | www.sheapi.top |
 | feixueapi.xyz | Claude 中转 | ❌ | feixueapi.xyz |
 | Tripo | 3D 生成 | ❌ | platform.tripo3d.ai |
+| 阿里云账户（BSS） | 账户总余额（含百炼消费） | ✅ QueryAccountBalance（需配置 AK） | expense.console.aliyun.com |
 
 仅 DeepSeek 有公开余额接口；其余通过 Key 有效性/连通性探测，失效或不可达会在悬浮窗标红并（可选）弹窗提醒。
 
@@ -40,6 +41,7 @@
     ├── SKILL.md                      # api-balance-watch 技能定义（DSH 技能库）
     ├── scripts/
     │   ├── check-api-balance.ps1     # 余额/可用性检查（输出 balance-state.json）
+│   ├── aliyun-balance.ps1       # 阿里云账户余额（BSS QueryAccountBalance，读本地 AK）
     │   ├── api-balance-widget.ps1    # 悬浮窗本体（WPF，缩略/展开 + 一键充值）
     │   └── launch-widget.vbs         # 悬浮窗启动器（explorer 代拉，解决窗口站隔离）
     └── README.md

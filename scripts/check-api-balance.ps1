@@ -1,4 +1,4 @@
-﻿# 各 API 余额/可用性检查（全矩阵，含充值链接）
+﻿# 各 API 余额/可用性检查（全矩阵，含充值链接 + 阿里云账户余额）
 # 用法: powershell -NoProfile -ExecutionPolicy Bypass -File check-api-balance.ps1 [-Threshold 5] [-Popup]
 param([double]$Threshold = 5, [switch]$Popup)
 $ErrorActionPreference = 'SilentlyContinue'
@@ -21,7 +21,6 @@ function Alert($msg) {
   Add-Content $logFile ((Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + ' ' + $msg)
   if ($Popup) { try { msg.exe $env:USERNAME $msg 2>$null } catch {} }
 }
-# 充值链接
 $URL_DS = 'https://platform.deepseek.com/top_up'
 $URL_BAILIAN = 'https://expense.console.aliyun.com/'
 $URL_SHEAPI = 'https://www.sheapi.top/'
@@ -70,6 +69,17 @@ if ($tripKey) {
   elseif ($code -eq '401' -or $code -eq '403') { Add-Report 'Tripo' 'Tripo(3D): Key 失效' 'bad' $URL_TRIPO; Alert 'Tripo 3D 的 Key 失效，请检查 ~/.codex/.env' }
   else { Add-Report 'Tripo' ("Tripo(3D): 探测异常 HTTP " + $code) 'warn' $URL_TRIPO }
 } else { Add-Report 'Tripo' 'Tripo(3D): 未找到 Key' 'bad' $URL_TRIPO }
+# ---------- 6. 阿里云账户余额（BSS，本地 aliyun-ak.conf 配置） ----------
+$aliOut = powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'aliyun-balance.ps1') 2>$null
+$aliLine = $aliOut | Select-Object -Last 1
+if ($aliLine -match 'ALIYUN: 账户余额 ¥([0-9.]+)') {
+  $ab = [double]$Matches[1]
+  $alv = 'ok'
+  if ($ab -lt $Threshold) { $alv = 'warn' }
+  Add-Report '阿里云' ("阿里云账户余额: ¥" + $ab.ToString('0.00')) $alv $URL_BAILIAN
+} elseif ($aliLine -notmatch '未配置') {
+  Add-Report '阿里云' '阿里云余额: 查询失败' 'warn' $URL_BAILIAN
+}
 # ---------- 状态文件（悬浮窗数据源） ----------
 $state = [pscustomobject]@{
   updated = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
